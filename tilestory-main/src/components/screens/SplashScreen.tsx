@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { Sparkles, Play } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { sound } from '../../services/sound';
 import { t } from '../../data/localization';
 
@@ -10,14 +10,45 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, language }) => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Start subtle ambient sound & track progress
+    sound.startAmbientMusic();
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        // Increment progress smoothly
+        const step = Math.floor(Math.random() * 8) + 5;
+        return Math.min(100, prev + step);
+      });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // When progress reaches 100%, transition automatically after a brief moment
+  useEffect(() => {
+    if (progress >= 100) {
+      const timer = setTimeout(() => {
+        onStart();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [progress, onStart]);
+
   return (
     <div
       onClick={() => {
-        sound.playTap();
-        sound.startAmbientMusic();
-        onStart();
+        if (progress >= 60) {
+          onStart();
+        }
       }}
-      className="relative w-full h-full flex flex-col items-center justify-between p-6 bg-gradient-to-b from-emerald-100 via-sky-100 to-amber-100 cursor-pointer select-none overflow-hidden"
+      className="relative w-full h-full flex flex-col items-center justify-between p-6 bg-gradient-to-b from-emerald-100 via-sky-100 to-amber-100 select-none overflow-hidden"
     >
       {/* Gentle Floating Sky Elements & Nature Atmosphere */}
       <div className="absolute top-8 left-6 text-3xl opacity-75 animate-float-slow">☁️</div>
@@ -62,7 +93,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, language })
           className="relative group mb-4"
         >
           {/* Ambient Glow Halo */}
-          <div className="absolute -inset-3 bg-gradient-to-r from-emerald-400 via-amber-300 to-teal-400 rounded-3xl blur-md opacity-70 group-hover:opacity-100 animate-pulse-glow" />
+          <div className="absolute -inset-3 bg-gradient-to-r from-emerald-400 via-amber-300 to-teal-400 rounded-3xl blur-md opacity-70 animate-pulse-glow" />
 
           {/* Icon Container with Wooden-styled Bevel Frame */}
           <motion.div
@@ -75,7 +106,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, language })
               alt="TileStory App Icon"
               className="w-full h-full object-cover select-none pointer-events-none filter drop-shadow-sm"
               onError={(e) => {
-                // Fallback if image path varies
                 (e.target as HTMLImageElement).src = '/app_icon.jpg';
               }}
             />
@@ -97,19 +127,34 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, language })
         </motion.p>
       </div>
 
-      {/* Bottom Interactive Play / Tap To Start Button */}
+      {/* Bottom Loading Progress Container (Replaces the Green Play Button) */}
       <motion.div
-        animate={{ scale: [1, 1.04, 1] }}
-        transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-        className="w-full max-w-xs mb-6 flex flex-col items-center gap-2.5 z-10"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="w-full max-w-xs mb-8 flex flex-col items-center gap-3 z-10"
       >
-        <div className="w-full py-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-heading font-extrabold text-lg rounded-2xl shadow-xl border-2 border-emerald-300 flex items-center justify-center gap-2.5 cursor-pointer ring-4 ring-emerald-400/30">
-          <Play className="w-5 h-5 fill-white" />
-          <span>{t('play', language)}</span>
-          <Sparkles className="w-5 h-5 text-amber-300 fill-amber-300" />
+        {/* Loading Text with Spinner and Percentage */}
+        <div className="flex items-center justify-between w-full px-2 text-xs font-bold text-emerald-900">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+            <span>{t('loading', language)}</span>
+          </div>
+          <span className="text-emerald-700 tabular-nums">{progress}%</span>
         </div>
-        <span className="text-xs text-slate-600 font-bold tracking-wide">
-          {t('tapToContinue', language)}
+
+        {/* Animated Progress Bar */}
+        <div className="w-full h-3.5 bg-white/80 rounded-full p-0.5 border-2 border-emerald-300 shadow-inner overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-500 rounded-full shadow-xs"
+            style={{ width: `${progress}%` }}
+            transition={{ ease: 'linear' }}
+          />
+        </div>
+
+        {/* Dynamic sub-caption */}
+        <span className="text-[11px] text-emerald-800/80 font-medium tracking-wide">
+          {t('loadingGarden', language)}
         </span>
       </motion.div>
     </div>

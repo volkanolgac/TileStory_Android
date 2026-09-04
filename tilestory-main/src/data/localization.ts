@@ -69,7 +69,9 @@ export const TRANSLATIONS = {
     close: 'Close',
     freeAdReward: 'Watch Video (+1 Booster)',
     buyWithCoins: 'Buy ({cost} Coins)',
-    insufficientCoins: 'Not enough coins!'
+    insufficientCoins: 'Not enough coins!',
+    loading: 'Loading...',
+    loadingGarden: 'Preparing garden tiles...'
   },
   tr: {
     gameTitle: 'Tile Story',
@@ -141,7 +143,9 @@ export const TRANSLATIONS = {
     close: 'Kapat',
     freeAdReward: 'Video İzle (+1 Güçlendirici)',
     buyWithCoins: 'Satın Al ({cost} Altın)',
-    insufficientCoins: 'Yetersiz altın!'
+    insufficientCoins: 'Yetersiz altın!',
+    loading: 'Yükleniyor...',
+    loadingGarden: 'Bahçe karoları hazırlanıyor...'
   }
 };
 
