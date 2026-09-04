@@ -1,0 +1,6 @@
+{
+  "name": "TileStory",
+  "description": "A relaxing casual mobile puzzle game where you match 3 identical figures on a 3D Mahjong board to clear the panel and discover nature recipes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
