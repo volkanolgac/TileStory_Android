@@ -13,9 +13,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, language })
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Start subtle ambient sound & track progress
-    sound.startAmbientMusic();
-
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -26,7 +23,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onStart, language })
         const step = Math.floor(Math.random() * 8) + 5;
         return Math.min(100, prev + step);
       });
-    }, 100);
+    }, 80);
 
     return () => clearInterval(interval);
   }, []);

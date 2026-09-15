@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -13,9 +14,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.enableEdgeToEdge
-import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.webkit.WebViewAssetLoader
 
 class MainActivity : ComponentActivity() {
@@ -26,7 +27,12 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        
+        // Fullscreen setup: hide navigation bars, 3 dots, status bar
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.attributes.layoutInDisplayCutoutMode =
+            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        hideSystemUI()
 
         assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
@@ -45,7 +51,6 @@ class MainActivity : ComponentActivity() {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
-                databaseEnabled = true
                 mediaPlaybackRequiresUserGesture = false
                 allowFileAccess = true
                 allowContentAccess = true
@@ -54,7 +59,6 @@ class MainActivity : ComponentActivity() {
                 loadWithOverviewMode = true
                 displayZoomControls = false
                 setSupportZoom(false)
-                mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
             }
 
             addJavascriptInterface(WebAppInterface(this@MainActivity), "Android")
@@ -75,12 +79,6 @@ class MainActivity : ComponentActivity() {
         webView = webViewInstance
         setContentView(webViewInstance)
 
-        ViewCompat.setOnApplyWindowInsetsListener(webViewInstance) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(0, systemBars.top, 0, systemBars.bottom)
-            insets
-        }
-
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 webViewInstance.evaluateJavascript(
@@ -96,8 +94,16 @@ class MainActivity : ComponentActivity() {
         })
     }
 
+    private fun hideSystemUI() {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+    }
+
     override fun onResume() {
         super.onResume()
+        hideSystemUI()
         webView?.onResume()
     }
 
@@ -112,3 +118,4 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 }
+

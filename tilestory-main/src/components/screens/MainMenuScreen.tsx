@@ -25,16 +25,43 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
         <div className="absolute top-8 left-6 text-3xl opacity-80 animate-float-slow">☁️</div>
 
         {/* Garden Elements in mid/bottom background */}
-        <div className="absolute bottom-16 inset-x-0 h-72 bg-gradient-to-t from-emerald-500/20 via-emerald-300/30 to-transparent rounded-t-[60px]" />
+        <div className="absolute bottom-12 inset-x-0 h-80 bg-gradient-to-t from-emerald-600/25 via-emerald-400/20 to-transparent rounded-t-[70px]" />
         
-        {/* Animated Garden Cottage preview */}
-        <div className="absolute bottom-28 left-8 text-6xl filter drop-shadow-md">🏡</div>
-        {/* Animated Trees preview */}
-        <div className="absolute bottom-36 right-6 text-5xl filter drop-shadow">🌳</div>
-        <div className="absolute bottom-24 right-16 text-4xl filter drop-shadow">🌲</div>
-        {/* Pond preview */}
-        <div className="absolute bottom-20 left-32 text-4xl opacity-90">🏝️</div>
-        {/* Fluttering Butterflies */}
+        {/* Rolling garden grass hill layer */}
+        <div className="absolute bottom-0 inset-x-0 h-44 bg-gradient-to-t from-emerald-500/30 to-transparent" />
+
+        {/* Houses and Village Buildings */}
+        <div className="absolute bottom-28 left-4 sm:left-10 text-6xl filter drop-shadow-md hover:scale-105 transition-transform">🏡</div>
+        <div className="absolute bottom-36 left-1 text-3xl opacity-85 filter drop-shadow-xs">🏠</div>
+
+        {/* Trees, Pines & Foliage on right (lowered to align horizontally with the house on the left) */}
+        <div className="absolute bottom-28 right-4 sm:right-10 text-5xl filter drop-shadow">🌳</div>
+        <div className="absolute bottom-35 right-1 sm:right-6 text-4xl opacity-85 filter drop-shadow-xs">🌳</div>
+        <div className="absolute bottom-24 right-14 sm:right-24 text-4xl filter drop-shadow">🌲</div>
+
+        {/* Ponds, Fountains & Island */}
+        <div className="absolute bottom-20 left-28 sm:left-36 text-4xl opacity-95 filter drop-shadow-xs">🏝️</div>
+        <div className="absolute bottom-16 right-36 text-3xl opacity-85">⛲</div>
+
+        {/* Rich Flowers, Garden Plants, Mushrooms & Nature Elements */}
+        <div className="absolute bottom-24 left-20 text-2xl animate-bounce-gentle">🌻</div>
+        <div className="absolute bottom-28 left-24 text-xl">🌷</div>
+        <div className="absolute bottom-20 left-12 text-2xl">🌸</div>
+        <div className="absolute bottom-16 left-6 text-xl">🪴</div>
+        <div className="absolute bottom-14 left-24 text-lg">🍄</div>
+        <div className="absolute bottom-22 left-44 text-xl">🌾</div>
+        <div className="absolute bottom-16 left-48 text-2xl">🌺</div>
+
+        {/* Right side garden vegetation (Pine tree moved to previous apple position) */}
+        <div className="absolute bottom-18 right-6 text-2xl">🌻</div>
+        <div className="absolute bottom-28 right-20 text-xl">🌷</div>
+        <div className="absolute bottom-14 right-20 text-2xl">🪵</div>
+        <div className="absolute bottom-16 right-28 text-lg">🍄</div>
+        <div className="absolute bottom-30 right-34 text-3xl filter drop-shadow-xs">🌲</div>
+        <div className="absolute bottom-22 right-44 text-xl">🌿</div>
+        <div className="absolute bottom-14 right-48 text-2xl">🍀</div>
+
+        {/* Fluttering Butterfly & Buzzing Bee (kept strictly without adding other flying animals) */}
         <motion.div
           animate={{ x: [0, 40, 20, 0], y: [0, -25, -10, 0] }}
           transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
@@ -52,31 +79,32 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
       </div>
 
       {/* Top Banner with Title */}
-      <div className="relative z-10 flex flex-col items-center pt-8 px-4 text-center">
+      <div className="relative z-10 flex flex-col items-center pt-8 px-4 text-center mt-[20px]">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className="flex flex-col items-center"
         >
-          <div className="px-3 py-1 bg-white/80 backdrop-blur-xs border border-amber-300 rounded-full text-amber-900 text-[11px] font-bold uppercase tracking-widest mb-1 shadow-xs">
+          <div className="px-4 py-1.5 bg-white/85 backdrop-blur-xs border border-amber-300 rounded-full text-amber-900 text-[13px] font-bold uppercase tracking-widest mb-1.5 shadow-xs">
             🌱 {t('gameSubtitle', language)}
           </div>
-          <h1 className="text-4xl font-extrabold text-slate-800 tracking-tight font-heading drop-shadow-sm">
+          <h1 className="text-5xl font-extrabold text-slate-800 tracking-tight font-heading drop-shadow-sm">
             Tile Story
           </h1>
-          <div className="text-xs font-semibold text-emerald-800/80 mt-0.5">
+          <div className="text-sm font-bold text-emerald-900/90 mt-1">
             {t('level', language)} {profile.currentLevel} • {Object.keys(profile.discoveries).length} {t('discoveryBook', language)}
           </div>
         </motion.div>
       </div>
 
-      {/* Main Big Play Button & Level indicator */}
-      <div className="relative z-10 flex flex-col items-center gap-3 px-6 my-auto">
+      {/* Main Center Action Block: Play, Level Map, and directly underneath: Collection, Daily Discovery, Daily Rewards */}
+      <div className="relative z-10 flex flex-col items-center gap-3 px-4 my-auto w-full max-w-md mx-auto">
+        {/* Play Button */}
         <motion.button
           id="main-menu-play-btn"
           type="button"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
           onClick={() => {
             sound.playTap();
             onNavigate('game');
@@ -87,7 +115,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
           <span>{t('play', language)}</span>
         </motion.button>
 
-        {/* Secondary Map Navigation pill */}
+        {/* Level Map Button */}
         <button
           id="main-menu-level-map-btn"
           type="button"
@@ -95,18 +123,15 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
             sound.playTap();
             onNavigate('level_map');
           }}
-          className="flex items-center gap-2 px-4 py-1.5 bg-white/90 backdrop-blur-xs border-2 border-emerald-300 rounded-full text-emerald-900 text-xs font-bold shadow-xs hover:bg-white active:scale-95 transition-all"
+          className="flex items-center gap-2 px-5 py-2 bg-white/95 backdrop-blur-xs border-2 border-emerald-300 rounded-full text-emerald-900 text-xs font-bold shadow-xs hover:bg-white active:scale-95 transition-all cursor-pointer"
         >
           <span>🗺️</span>
           <span>{t('levelMap', language)}</span>
         </button>
-      </div>
 
-      {/* Secondary Menu Buttons: 3 Equal Small Buttons (Koleksiyon, Günün Keşfi, Günlük Ödül) */}
-      <div className="relative z-10 px-4 flex flex-col gap-2.5">
-        {/* Quick Access Row: 3 Equal-Sized Compact Buttons */}
-        <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto w-full">
-          {/* Koleksiyon Button (Equal small size) */}
+        {/* 3 Equal Buttons Directly Under Level Map: Collection, Daily Discovery, Daily Rewards */}
+        <div className="grid grid-cols-3 gap-2 max-w-sm mx-auto w-full mt-1">
+          {/* Collection Button */}
           <button
             id="main-menu-discovery-btn"
             type="button"
@@ -127,7 +152,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
             </div>
           </button>
 
-          {/* Günün Keşfi Button */}
+          {/* Daily Discovery Button */}
           <button
             id="main-menu-daily-puz-btn"
             type="button"
@@ -148,7 +173,7 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
             </div>
           </button>
 
-          {/* Günlük Ödüller Button */}
+          {/* Daily Rewards Button */}
           <button
             id="main-menu-daily-rewards-btn"
             type="button"
@@ -169,35 +194,35 @@ export const MainMenuScreen: React.FC<MainMenuScreenProps> = ({
             </div>
           </button>
         </div>
+      </div>
 
-        {/* Small Bottom Utility Bar (Profile, Help) */}
-        <div className="flex items-center justify-center gap-4 mt-1">
-          <button
-            id="main-menu-profile-btn"
-            type="button"
-            onClick={() => {
-              sound.playTap();
-              onNavigate('profile');
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 hover:bg-white text-slate-700 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>{t('profile', language)}</span>
-          </button>
+      {/* Bottom Utility Bar (Profile, Help) - Enlarged by 90% */}
+      <div className="relative z-10 px-4 flex items-center justify-center gap-4 sm:gap-6 mt-1 mb-2">
+        <button
+          id="main-menu-profile-btn"
+          type="button"
+          onClick={() => {
+            sound.playTap();
+            onNavigate('profile');
+          }}
+          className="flex-1 max-w-[170px] flex items-center justify-center gap-2.5 px-5 py-3 rounded-2xl bg-white/90 hover:bg-white text-slate-800 text-sm sm:text-base font-extrabold border-2 border-slate-200/90 shadow-md active:scale-95 transition-all cursor-pointer"
+        >
+          <User className="w-5 h-5 text-indigo-600" />
+          <span>{t('profile', language)}</span>
+        </button>
 
-          <button
-            id="main-menu-help-btn"
-            type="button"
-            onClick={() => {
-              sound.playTap();
-              onNavigate('help');
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 hover:bg-white text-slate-700 text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
-          >
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>{t('help', language)}</span>
-          </button>
-        </div>
+        <button
+          id="main-menu-help-btn"
+          type="button"
+          onClick={() => {
+            sound.playTap();
+            onNavigate('help');
+          }}
+          className="flex-1 max-w-[170px] flex items-center justify-center gap-2.5 px-5 py-3 rounded-2xl bg-white/90 hover:bg-white text-slate-800 text-sm sm:text-base font-extrabold border-2 border-slate-200/90 shadow-md active:scale-95 transition-all cursor-pointer"
+        >
+          <HelpCircle className="w-5 h-5 text-emerald-600" />
+          <span>{t('help', language)}</span>
+        </button>
       </div>
     </div>
   );

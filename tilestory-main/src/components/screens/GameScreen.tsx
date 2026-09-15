@@ -20,7 +20,7 @@ interface GameScreenProps {
   language: 'en' | 'tr';
 }
 
-// Robust Fisher-Yates shuffle
+// Fast Fisher-Yates shuffle
 function shuffleArray<T>(items: T[]): T[] {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i--) {
@@ -44,59 +44,22 @@ function generateLevelTiles(levelConfig: LevelConfig, levelId: number): BoardTil
     }
   });
 
-  // 2. Perform double Fisher-Yates full shuffle of all items
-  let shuffledItems = shuffleArray(allItems);
-  shuffledItems = shuffleArray(shuffledItems);
+  // 2. Fast Fisher-Yates full shuffle of all items (O(N) - instant in <1ms)
+  const shuffledItems = shuffleArray(allItems);
 
   // 3. Get multi-layer Mahjong tower coordinates
   const coords = getBoardCoordinatesForLevel(levelConfig.boardShape, allItems.length);
 
-  // 4. Anti-clustering dispersion: ensure identical figures are not placed side-by-side or adjacent
-  for (let pass = 0; pass < 50; pass++) {
-    let hasConflict = false;
-    for (let i = 0; i < coords.length; i++) {
-      const c1 = coords[i];
-      const item1 = shuffledItems[i];
-      if (!item1) continue;
-
-      for (let j = i + 1; j < coords.length; j++) {
-        const c2 = coords[j];
-        const item2 = shuffledItems[j];
-        if (!item2) continue;
-
-        // If touching/adjacent in the same layer
-        const isTouching =
-          c1.l === c2.l &&
-          Math.abs(c1.r - c2.r) <= 1.05 &&
-          Math.abs(c1.c - c2.c) <= 1.05;
-
-        if (isTouching && item1.tileId === item2.tileId) {
-          hasConflict = true;
-          // Find a swap candidate with a different tileId not adjacent to c1
-          let swapIdx = Math.floor(Math.random() * coords.length);
-          for (let attempts = 0; attempts < 25; attempts++) {
-            const candidateCoord = coords[swapIdx];
-            const candidateItem = shuffledItems[swapIdx];
-            if (
-              candidateItem &&
-              candidateItem.tileId !== item1.tileId &&
-              (candidateCoord.l !== c1.l ||
-                Math.abs(candidateCoord.r - c1.r) > 1.2 ||
-                Math.abs(candidateCoord.c - c1.c) > 1.2)
-            ) {
-              break;
-            }
-            swapIdx = (swapIdx + 7) % coords.length;
-          }
-
-          const temp = shuffledItems[i];
-          shuffledItems[i] = shuffledItems[swapIdx];
-          shuffledItems[swapIdx] = temp;
-          break;
-        }
-      }
+  // 4. Fast single-pass anti-clustering dispersion (O(N))
+  for (let i = 0; i < coords.length - 1; i++) {
+    const c1 = coords[i];
+    const c2 = coords[i + 1];
+    if (c1.l === c2.l && shuffledItems[i].tileId === shuffledItems[i + 1].tileId) {
+      const targetIdx = (i + Math.floor(coords.length / 3)) % coords.length;
+      const temp = shuffledItems[i + 1];
+      shuffledItems[i + 1] = shuffledItems[targetIdx];
+      shuffledItems[targetIdx] = temp;
     }
-    if (!hasConflict) break;
   }
 
   // 5. Construct BoardTile instances with unique keys
@@ -142,6 +105,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [craftedCollection, setCraftedCollection] = useState<Record<string, number>>({});
   const [hasPlayedMove, setHasPlayedMove] = useState<boolean>(false);
   const [matchingTileIds, setMatchingTileIds] = useState<string[]>([]);
+  const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
   const mergeTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clean up timers on unmount
@@ -154,6 +118,36 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     };
   }, []);
 
+  // Auto-dismiss tutorial hint after 5 seconds
+  useEffect(() => {
+    if (showTutorial) {
+      const timer = setTimeout(() => {
+        setShowTutorial(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showTutorial]);
+
+  // Auto-dismiss booster highlighted hint tiles after 5 seconds
+  useEffect(() => {
+    if (hintedTileIds.length > 0) {
+      const timer = setTimeout(() => {
+        setHintedTileIds([]);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [hintedTileIds]);
+
+  // Listen to Android hardware back button inside active game screen
+  useEffect(() => {
+    const handleAndroidBackInGame = () => {
+      if (isGameOver || isVictory) return;
+      setShowQuitConfirm((prev) => !prev);
+    };
+    window.addEventListener('androidback', handleAndroidBackInGame);
+    return () => window.removeEventListener('androidback', handleAndroidBackInGame);
+  }, [isGameOver, isVictory]);
+
   // Mahjong Layer State & Interactive Feedback
   const [shakingTileId, setShakingTileId] = useState<string | null>(null);
   const [newlyUncoveredIds, setNewlyUncoveredIds] = useState<string[]>([]);
@@ -161,22 +155,29 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const boardContainerRef = useRef<HTMLDivElement>(null);
   const [boardDim, setBoardDim] = useState({ width: 340, height: 330 });
 
-  // Responsive board sizing
+  // Responsive board sizing (handles phone, tablet, portrait and landscape orientation changes)
   useEffect(() => {
-    if (!boardContainerRef.current) return;
     const updateDim = () => {
       if (boardContainerRef.current) {
         const { clientWidth, clientHeight } = boardContainerRef.current;
         setBoardDim({
-          width: Math.max(280, clientWidth),
-          height: Math.max(260, clientHeight)
+          width: Math.max(260, clientWidth),
+          height: Math.max(220, clientHeight)
         });
       }
     };
     updateDim();
+    window.addEventListener('resize', updateDim);
+    window.addEventListener('orientationchange', updateDim);
     const ro = new ResizeObserver(updateDim);
-    ro.observe(boardContainerRef.current);
-    return () => ro.disconnect();
+    if (boardContainerRef.current) {
+      ro.observe(boardContainerRef.current);
+    }
+    return () => {
+      window.removeEventListener('resize', updateDim);
+      window.removeEventListener('orientationchange', updateDim);
+      ro.disconnect();
+    };
   }, []);
 
   // Initialize Board Tiles when level changes
@@ -200,6 +201,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     setNewlyUncoveredIds([]);
     setBlockedNotice(null);
     setHasPlayedMove(false);
+    setShowQuitConfirm(false);
   }, [levelId, levelConfig]);
 
   // Auto-Match: Detect 3 identical figures in dock and automatically clear them!
@@ -288,7 +290,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           levelConfig.rewards.coins,
           levelConfig.rewards.stars
         );
-      }, 1200);
+      }, 700);
     } else if (hasPlayedMove && movesLeft <= 0 && dockTiles.length === 0) {
       setIsGameOver(true);
       sound.playError();
@@ -521,11 +523,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   };
 
-  // Calculate Mahjong Pyramid Layout Dimensions
-  const minR = Math.min(...boardTiles.map((t) => t.row), 0);
-  const maxR = Math.max(...boardTiles.map((t) => t.row), 5);
-  const minC = Math.min(...boardTiles.map((t) => t.col), 0);
-  const maxC = Math.max(...boardTiles.map((t) => t.col), 7);
+  // Calculate Mahjong Pyramid Layout Dimensions with exact tile bounds
+  const minR = boardTiles.length > 0 ? Math.min(...boardTiles.map((t) => t.row)) : 0;
+  const maxR = boardTiles.length > 0 ? Math.max(...boardTiles.map((t) => t.row)) : 5;
+  const minC = boardTiles.length > 0 ? Math.min(...boardTiles.map((t) => t.col)) : 0;
+  const maxC = boardTiles.length > 0 ? Math.max(...boardTiles.map((t) => t.col)) : 7;
 
   const spanCols = Math.max(1, maxC - minC);
   const spanRows = Math.max(1, maxR - minR);
@@ -537,23 +539,28 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   // Gentle 2px vertical lift per layer so upper layers naturally pop without horizontal drifting
   const layerElevationY = 2.0;
 
-  // Generous 3D tile dimensions optimized for central visibility
-  const availW = Math.max(280, boardDim.width - 24);
-  const availH = Math.max(260, boardDim.height - 24);
+  // Tile dimensions: tile rendered actual width is 56px (w-14) or 44px (w-11)
+  // Determine tile size based on available board width
+  const availW = Math.max(260, boardDim.width - 24);
+  const availH = Math.max(240, boardDim.height - 24);
 
-  const stepX = Math.max(34, Math.min(52, availW / (spanCols + 1.2)));
-  const stepY = Math.max(40, Math.min(60, availH / (spanRows + 1.3)));
+  // Tile actual physical width & height in pixels (matches TileView 'md' size: 56px x 72px)
+  const isCompact = availW < 330;
+  const tileSize: 'sm' | 'md' = isCompact ? 'sm' : 'md';
+  const actualTileWidth = isCompact ? 44 : 56;
+  const actualTileHeight = isCompact ? 52 : 72;
 
-  const tileWidth = Math.round(stepX * 1.05);
-  const tileHeight = Math.round(stepY * 1.18);
-  const tileSize = stepX < 40 ? 'sm' : 'md';
+  // Horizontal step spacing fitted evenly into available width
+  const stepX = Math.max(32, Math.min(48, (availW - actualTileWidth) / spanCols));
+  const stepY = Math.max(38, Math.min(56, (availH - actualTileHeight) / spanRows));
 
-  const totalW = spanCols * stepX + tileWidth;
-  const totalH = spanRows * stepY + tileHeight;
+  // The exact total width and height occupied by all tiles from leftmost edge to rightmost edge
+  const totalOccupiedWidth = spanCols * stepX + actualTileWidth;
+  const totalOccupiedHeight = spanRows * stepY + actualTileHeight;
 
-  // Mathematically centered in the board area
-  const startX = Math.max(6, (boardDim.width - totalW) / 2);
-  const startY = Math.max(8, (boardDim.height - totalH) / 2);
+  // Perfectly symmetrical horizontal centering: Left margin == Right margin
+  const startX = Math.round((boardDim.width - totalOccupiedWidth) / 2);
+  const startY = Math.max(6, Math.round((boardDim.height - totalOccupiedHeight) / 2));
 
   // Sorted tiles for rendering: lower layers first in DOM, upper layers later in DOM
   const sortedBoardTiles = React.useMemo(() => {
@@ -576,9 +583,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           type="button"
           onClick={() => {
             sound.playTap();
-            onBack();
+            setShowQuitConfirm(true);
           }}
-          className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-xs active:scale-95 transition-all"
+          className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-700 shadow-xs active:scale-95 transition-all cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -807,8 +814,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       </div>
 
-      {/* Dedicated Bottom Merge Dock (Only the gameplay matching area - No bottom buttons) */}
-      <div className={`relative z-10 shrink-0 w-full bg-white/95 backdrop-blur-md border-t border-amber-200 shadow-md flex flex-col pt-1 pb-2 transition-opacity duration-300 ${
+      {/* Dedicated Bottom Merge Dock (Only the gameplay matching area - moved 30px up) */}
+      <div className={`relative z-10 shrink-0 w-full bg-white/95 backdrop-blur-md border-t border-amber-200 shadow-md flex flex-col pt-1 pb-2 -translate-y-[30px] transition-opacity duration-300 ${
         isGameOver || isVictory ? 'opacity-80 pointer-events-none' : ''
       }`}>
         <MergeDock
@@ -892,51 +899,56 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Victory Celebration Modal - Elevated to absolute front (z-[100]) */}
+      {/* Quit Confirmation Dialog Modal */}
       <AnimatePresence>
-        {isVictory && (
+        {showQuitConfirm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-6 select-none"
+            className="absolute inset-0 z-[110] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-6 select-none"
           >
             <motion.div
-              initial={{ scale: 0.8, y: 30 }}
+              initial={{ scale: 0.85, y: 15 }}
               animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 15 }}
               className="w-full max-w-sm bg-white rounded-3xl p-6 border-4 border-amber-300 shadow-2xl flex flex-col items-center text-center relative z-10"
             >
-              <span className="text-5xl animate-bounce">🏆</span>
-              <h2 className="text-2xl font-black text-amber-950 font-heading mt-2">
-                {t('victory', language)}
-              </h2>
-              <p className="text-xs text-slate-600 mt-1">
-                {language === 'tr' ? 'Harika bir birleştirme performansı!' : 'Splendid merging performance!'}
+              <div className="w-14 h-14 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-2xl mb-3 shadow-inner">
+                🚪
+              </div>
+              <h3 className="text-xl font-black text-slate-800 font-heading">
+                {t('quitConfirmTitle', language)}
+              </h3>
+              <p className="text-xs text-slate-600 mt-1.5 mb-6 font-medium leading-relaxed">
+                {t('quitConfirmDesc', language)}
               </p>
 
-              {/* Rewards Summary */}
-              <div className="flex gap-4 my-4 p-3 bg-amber-50 rounded-2xl border border-amber-200 w-full justify-center">
-                <div className="flex items-center gap-1.5 font-extrabold text-amber-900 text-sm">
-                  <span>🪙</span>
-                  <span>+{levelConfig.rewards.coins}</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-extrabold text-amber-900 text-sm">
-                  <span>⭐</span>
-                  <span>+{levelConfig.rewards.stars}</span>
-                </div>
+              <div className="flex gap-3 w-full">
+                <button
+                  id="quit-confirm-yes-btn"
+                  type="button"
+                  onClick={() => {
+                    sound.playTap();
+                    setShowQuitConfirm(false);
+                    onBack();
+                  }}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-rose-500 hover:bg-rose-600 font-bold text-white text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+                >
+                  {t('yesQuit', language)}
+                </button>
+                <button
+                  id="quit-confirm-no-btn"
+                  type="button"
+                  onClick={() => {
+                    sound.playTap();
+                    setShowQuitConfirm(false);
+                  }}
+                  className="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-400 font-bold text-white text-sm shadow-md active:scale-95 transition-all cursor-pointer"
+                >
+                  {t('noContinue', language)}
+                </button>
               </div>
-
-              <button
-                id="victory-continue-btn"
-                type="button"
-                onClick={() => {
-                  sound.playTap();
-                  onBack();
-                }}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 font-bold text-white text-base shadow-lg active:scale-95 transition-all"
-              >
-                {t('nextLevel', language)}
-              </button>
             </motion.div>
           </motion.div>
         )}

@@ -112,19 +112,19 @@ export const MergeDock: React.FC<MergeDockProps> = ({
         </div>
 
         {/* Right Side: Status Message */}
-        <div className="text-[9px] font-bold text-right leading-tight min-w-[58px] shrink-0 font-heading">
+        <div className="text-[9px] font-bold text-right leading-tight max-w-[64px] shrink-0 font-heading overflow-hidden text-ellipsis whitespace-normal">
           {isMerging ? (
             <div className="flex items-center justify-end gap-0.5 text-emerald-700 animate-bounce">
-              <Sparkles className="w-3 h-3 text-amber-600" />
-              <span>{language === 'tr' ? 'Kalktı! ✨' : 'Cleared! ✨'}</span>
+              <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />
+              <span className="truncate">{language === 'tr' ? 'Kalktı! ✨' : 'Match! ✨'}</span>
             </div>
           ) : isFull ? (
-            <span className="text-rose-600 font-extrabold">
-              {language === 'tr' ? 'Tahta Dolu!' : 'Full!'}
+            <span className="text-rose-600 font-extrabold block">
+              {language === 'tr' ? 'Dolu!' : 'Full!'}
             </span>
           ) : (
-            <span className="text-amber-900/80">
-              {language === 'tr' ? '3 tane birikince kalkar' : 'Match 3'}
+            <span className="text-amber-900/80 block">
+              {language === 'tr' ? '3 Eşle' : 'Match 3'}
             </span>
           )}
         </div>

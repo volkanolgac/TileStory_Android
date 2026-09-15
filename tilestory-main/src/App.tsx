@@ -48,8 +48,10 @@ export default function App() {
         return;
       }
       if (currentScreen === 'game') {
-        setCurrentScreen('level_map');
-      } else if (currentScreen !== 'main_menu' && currentScreen !== 'splash') {
+        // GameScreen handles 'androidback' to show/dismiss its own confirmation modal
+        return;
+      }
+      if (currentScreen !== 'main_menu' && currentScreen !== 'splash') {
         setCurrentScreen('main_menu');
       } else if (currentScreen === 'main_menu') {
         const android = (window as unknown as { Android?: { closeApp?: () => void } }).Android;
